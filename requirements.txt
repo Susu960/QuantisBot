@@ -1,0 +1,4 @@
+flask
+python-dotenv
+websocket-client
+openai
