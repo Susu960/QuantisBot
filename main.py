@@ -24,19 +24,22 @@ def get_status():
 
 @app.route("/start", methods=["POST"])
 def start_bot():
+
     token = os.environ.get("DERIV_API_TOKEN")
     key = os.environ.get("OPENAI_API_KEY")
 
     if not token:
         return jsonify({"error": "DERIV_API_TOKEN not set"}), 500
 
-    client = DerivClient(token)
-    if not client.connect():
-        return jsonify({"error": "Failed to connect to Deriv"}), 500
-    client.close()
-
     if not key:
         return jsonify({"error": "OPENAI_API_KEY not set"}), 500
+
+    client = DerivClient(token)
+
+    if not client.connect():
+        return jsonify({"error": "Failed to connect to Deriv"}), 500
+
+    client.close()
 
     try:
         DecisionEngine(key)
@@ -44,7 +47,12 @@ def start_bot():
         return jsonify({"error": str(e)}), 500
 
     bot_state["online"] = True
-    return jsonify({"message": "Bot is ready to trade"})
+
+    return jsonify({
+        "message": "Bot is ready",
+        "ai": "connected",
+        "status": "online"
+    })
 
 @app.route("/stop", methods=["POST"])
 def stop_bot():
@@ -53,27 +61,40 @@ def stop_bot():
 
 @app.route("/trade", methods=["POST"])
 def trade():
+
     if not bot_state["online"]:
         return jsonify({"error": "Bot is offline"}), 400
-    
+
     data = request.get_json()
 
     symbol = data.get("symbol", "frxEURUSD")
-    action = data.get("action", "BUY")
     amount = data.get("amount", 1)
 
-    contract_type = "CALL" if action.upper() == "BUY" else "PUT"
+    market_data = data.get("market_data", {})
 
+    openai_key = os.environ.get("OPENAI_API_KEY")
     deriv_token = os.environ.get("DERIV_API_TOKEN")
 
-    client = DerivClient(deriv_token)
-    if client.connect():
-        response = client.buy(symbol, amount, contract_type)
-        client.close()
-        return jsonify({"status": "executed", "deriv_response": response})
-    else:
-        return jsonify({"status": "error"}), 500
+    engine = DecisionEngine(openai_key)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    try:
+        analysis = engine.analyze_market(symbol, market_data)
+    except Exception as e:
+        return jsonify({
+            "status": "ai_error",
+            "error": str(e)
+        }), 500
+
+    signal = analysis.get("signal", "HOLD").upper()
+    confidence = analysis.get("confidence", 0)
+    reason = analysis.get("reason", "No reason provided")
+
+    if signal == "HOLD":
+        return jsonify({
+            "status": "hold",
+            "signal": signal,
+            "confidence": confidence,
+            "reason": reason
+        })
+
+    contract_type = "CALL" if signal == "BUY
