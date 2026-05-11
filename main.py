@@ -97,4 +97,27 @@ def trade():
             "reason": reason
         })
 
-    contract_type = "CALL" if signal == "BUY
+    contract_type = "CALL" if signal == "BUY else "PUT"
+
+    client = DerivClient(deriv_token)
+
+    if not client.connect():
+        return jsonify({
+            "status": "connection_error"
+        }), 500
+
+    response = client.buy(symbol, amount, contract_type)
+
+    client.close()
+
+    return jsonify({
+        "status": "executed",
+        "signal": signal,
+        "confidence": confidence,
+        "reason": reason,
+        "deriv_response": response
+    })
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
