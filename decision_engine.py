@@ -8,9 +8,54 @@ class DecisionEngine:
         self.client = OpenAI(api_key=key)
 
     def analyze_market(self, symbol, market_data):
-        prompt = f"Analyze {symbol} data: {market_data}. Return JSON: {{\"signal\": \"buy|sell|hold\"}}"
+
+        prompt = f"""
+You are an advanced forex trading AI.
+
+Analyze the following market data for {symbol}.
+
+Market data:
+{market_data}
+
+Your job:
+- Decide if the bot should BUY, SELL, or HOLD.
+- Avoid risky trades.
+- Avoid overtrading.
+- Prioritize capital protection.
+- Only allow high probability entries.
+
+Return ONLY valid JSON.
+
+Example:
+{{
+  "signal": "BUY",
+  "confidence": 87,
+  "reason": "Strong bullish momentum confirmed"
+}}
+
+Or:
+{{
+  "signal": "HOLD",
+  "confidence": 92,
+  "reason": "High volatility and weak confirmation"
+}}
+"""
+
         response = self.client.chat.completions.create(
             model="gpt-4",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a professional forex trading analyst."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.2
         )
-        return json.loads(response.choices[0].message.content.strip())
+
+        content = response.choices[0].message.content.strip()
+
+        return json.loads(content)
