@@ -21,8 +21,8 @@ Your job:
 - Decide if the bot should BUY, SELL, or HOLD.
 - Avoid risky trades.
 - Avoid overtrading.
-- Prioritize capital protection.
-- Only allow high probability entries.
+- Protect the trading capital.
+- Prioritize high quality entries while maintaining healthy trading opportunities.
 
 Return ONLY valid JSON.
 
@@ -34,9 +34,18 @@ Example:
 }}
 
 Or:
+
+{{
+  "signal": "SELL",
+  "confidence": 79,
+  "reason": "Bearish continuation detected"
+}}
+
+Or:
+
 {{
   "signal": "HOLD",
-  "confidence": 92,
+  "confidence": 91,
   "reason": "High volatility and weak confirmation"
 }}
 """
