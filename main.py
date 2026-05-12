@@ -102,7 +102,7 @@ def trade():
             "reason": reason
         })
 
-    contract_type = "CALL" if signal == "BUY else "PUT"
+    contract_type = "CALL" if signal == "BUY" else "PUT"
 
     client = DerivClient(deriv_token)
 
