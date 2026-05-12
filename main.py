@@ -55,8 +55,7 @@ try:
             "price": 1.08,
             "trend": "bullish",
             "volume": "medium"
-        }
-    )
+        })
 
     logger.info(f"AI TEST RESPONSE: {test_analysis}")
 
