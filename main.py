@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+enginegineom flask import Flask, jsonify, request
 import os
 import logging
 from deriv_client import DerivClient
@@ -46,8 +46,7 @@ def start_bot():
 
     client.close()
 
-try:
-engine = DecisionEngine(key)
+try:    engine = DecisionEngine(key)
 
     test_analysis = engine.analyze_market(
         "frxEURUSD",
