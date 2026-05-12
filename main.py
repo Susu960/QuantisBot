@@ -1,4 +1,4 @@
-tryryrom flask import Flask, jsonify, request
+from flask import Flask, jsonify, request
 import os
 import logging
 from deriv_client import DerivClient
