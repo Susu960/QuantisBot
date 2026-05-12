@@ -47,6 +47,7 @@ def start_bot():
     client.close()
 
 try:
+    
 engine = DecisionEngine(key)
 
     test_analysis = engine.analyze_market(
