@@ -55,6 +55,7 @@ try:    engine = DecisionEngine(key)
             "trend": "bullish",
             "volume": "medium"
         }
+    )
     engine logger.info(f"AI TEST RESPONSE: {test_analysis}")
 
 except Exception as e:
