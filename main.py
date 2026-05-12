@@ -46,7 +46,7 @@ def start_bot():
 
     client.close()
 
-    try:
+      try:
     engine = DecisionEngine(key)
 
     test_analysis = engine.analyze_market(
@@ -61,9 +61,9 @@ def start_bot():
     logger.info(f"AI TEST RESPONSE: {test_analysis}")
 
 except Exception as e:
-    return jsonify({"error": str(e)}), 500
-                       
-    bot_state["online"] = True
+    return jsonify({"error": str(e)}), 500       
+   
+bot_state["online"] = True
 
     return jsonify({
         "message": "Bot is ready",
