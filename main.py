@@ -25,8 +25,7 @@ def get_status():
         "bot": "online" if bot_state["online"] else "offline",
         "ai": "connected",
         "broker": "connected",
-        "mode": "monitoring"
-    })
+        "mode": "monitoring"})
 
 @app.route("/start", methods=["POST"])
 def start_bot():
