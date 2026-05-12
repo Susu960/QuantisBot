@@ -20,7 +20,13 @@ def health_check():
 
 @app.route("/status")
 def get_status():
-    return jsonify({"bot": "online" if bot_state["online"] else "offline"})
+
+    return jsonify({
+        "bot": "online" if bot_state["online"] else "offline",
+        "ai": "connected",
+        "broker": "connected",
+        "mode": "monitoring"
+    })
 
 @app.route("/start", methods=["POST"])
 def start_bot():
