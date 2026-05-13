@@ -47,20 +47,10 @@ def start_bot():
     client.close()
 
 try:
-    engine = DecisionEngine(key)
-
-    test_analysis = engine.analyze_market(
-        "frxEURUSD",
-        {
-            "price": 1.08,
-            "trend": "bullish",
-            "volume": "medium"
-        }
-    )
-    engine logger.info(f"AI TEST RESPONSE: {test_analysis}")
-
+    DecisionEngine(key)
 except Exception as e:
-    return jsonify({"error": str(e)}), 500       
+    return jsonify({"error": str(e)}), 500
+      
    
 bot_state["online"] = True
 
