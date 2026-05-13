@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+datataDecisionEngineDecisionEngineom flask import Flask, jsonify, request
 import os
 import logging
 from deriv_client import DerivClient
@@ -68,7 +68,7 @@ def stop_bot():
 def trade():
 
     if not bot_state["online"]:
-        return jsonify({"error": "BoDecisionEngine(), 400
+        return jsonify({"error" "DecisionEngine(), 400
 
     data = request.get_json()
 
