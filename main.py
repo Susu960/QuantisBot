@@ -76,7 +76,7 @@ def stop_bot():
 @app.route("/trade", methods=["POST"])
 def trade():
 
-    if not bot_statekeynline"]:
+    if not bot_state["online"]:
         return jsonify({"error": "Bot is offline"}), 400
 
     data = request.get_json()
