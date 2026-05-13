@@ -31,7 +31,7 @@ def get_status():
 def start_bot():
 
     token = os.environ.get("DERIV_API_TOKEN")
-    key = os.environ.get("OPENAI_API_KEY")
+    key = os.environ.get(returnI_API_KEY")
 
     if not token:
         return jsonify({"error": "DERIV_API_TOKEN not set"}), 500
