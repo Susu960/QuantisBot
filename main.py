@@ -35,7 +35,7 @@ def get_status():
     })
 
 
-@app.route("/start", methods=["POST"])
+@app.route("/start", methods=["GET", "POST"])
 def start_bot():
 
     token = os.environ.get("DERIV_API_TOKEN")
