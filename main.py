@@ -19,9 +19,11 @@ bot_state = {
     "mode": "monitoring"
 }
 
+
 @app.route("/", methods=["GET"])
 def health_check():
     return jsonify({"status": "running"})
+
 
 @app.route("/status", methods=["GET"])
 def get_status():
@@ -32,8 +34,10 @@ def get_status():
         "mode": bot_state["mode"]
     })
 
+
 @app.route("/start", methods=["POST"])
 def start_bot():
+
     token = os.environ.get("DERIV_API_TOKEN")
     key = os.environ.get("OPENAI_API_KEY")
 
@@ -62,13 +66,16 @@ def start_bot():
         "status": "online"
     })
 
+
 @app.route("/stop", methods=["POST"])
 def stop_bot():
+
     bot_state["online"] = False
 
     return jsonify({
         "message": "Bot stopped"
     })
+
 
 @app.route("/trade", methods=["POST"])
 def trade():
@@ -78,31 +85,33 @@ def trade():
 
     data = request.get_json()
 
-symbol = data.get("symbol", "frxEURUSD")
-amount = data.get("amount", 1)
+    symbol = data.get("symbol", "frxEURUSD")
+    amount = data.get("amount", 1)
 
-market_data = data.get("market_data", {})
+    market_data = data.get("market_data", {})
 
-engine = DecisionEngine()
+    engine = DecisionEngine()
 
-analysis = engine.analyze_market(
-    symbol,
-    market_data
-)
+    analysis = engine.analyze_market(
+        symbol,
+        market_data
+    )
 
-signal = analysis.get("signal", "HOLD")
-confidence = analysis.get("confidence", 0)
-reason = analysis.get("reason", "No reason")
+    signal = analysis.get("signal", "HOLD")
+    confidence = analysis.get("confidence", 0)
+    reason = analysis.get("reason", "No reason")
 
-if signal == "HOLD":
+    if signal == "HOLD":
 
-    return jsonify({
-        "status": "hold",
-        "confidence": confidence,
-        "reason": reason
-    })
+        return jsonify({
+            "status": "hold",
+            "confidence": confidence,
+            "reason": reason
+        })
 
-contract_type = "CALL" if signal == "BUY" else "PUT"
+    contract_type = "CALL" if signal == "BUY" else "PUT"
+
+    deriv_token = os.environ.get("DERIV_API_TOKEN")
 
     client = DerivClient(deriv_token)
 
@@ -118,16 +127,18 @@ contract_type = "CALL" if signal == "BUY" else "PUT"
 
         return jsonify({
             "status": "executed",
-            "action": action,
+            "signal": signal,
+            "confidence": confidence,
+            "reason": reason,
             "symbol": symbol,
             "amount": amount,
             "deriv_response": response
         })
 
-    else:
-        return jsonify({
-            "status": "error"
-        }), 500
+    return jsonify({
+        "status": "error"
+    }), 500
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
