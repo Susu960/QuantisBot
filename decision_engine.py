@@ -2,51 +2,40 @@ import os
 import json
 from openai import OpenAI
 
+
 class DecisionEngine:
+
     def __init__(self, api_key=None):
+
         key = api_key or os.environ.get("OPENAI_API_KEY")
+
         self.client = OpenAI(api_key=key)
 
     def analyze_market(self, symbol, market_data):
 
         prompt = f"""
-You are an advanced forex trading AI.
+You are an elite forex trading AI.
 
-Analyze the following market data for {symbol}.
+Analyze the forex market data carefully.
 
-Market data:
+SYMBOL:
+{symbol}
+
+MARKET DATA:
 {market_data}
 
-Your job:
-- Decide if the bot should BUY, SELL, or HOLD.
-- Avoid risky trades.
+Rules:
+- Only take trades with decent probability.
 - Avoid overtrading.
-- Protect the trading capital.
-- Prioritize high quality entries while maintaining healthy trading opportunities.
+- If market conditions are unclear, return HOLD.
+- Focus on safer entries.
+- Return ONLY valid JSON.
 
-Return ONLY valid JSON.
-
-Example:
+Response format:
 {{
-  "signal": "BUY",
-  "confidence": 87,
-  "reason": "Strong bullish momentum confirmed"
-}}
-
-Or:
-
-{{
-  "signal": "SELL",
-  "confidence": 79,
-  "reason": "Bearish continuation detected"
-}}
-
-Or:
-
-{{
-  "signal": "HOLD",
-  "confidence": 91,
-  "reason": "High volatility and weak confirmation"
+    "signal": "BUY or SELL or HOLD",
+    "confidence": 0-100,
+    "reason": "short explanation"
 }}
 """
 
@@ -55,14 +44,14 @@ Or:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a professional forex trading analyst."
+                    "content": "You are a professional forex AI trading analyst."
                 },
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            temperature=0.2
+            temperature=0.3
         )
 
         content = response.choices[0].message.content.strip()
