@@ -78,13 +78,31 @@ def trade():
 
     data = request.get_json()
 
-    symbol = data.get("symbol", "frxEURUSD")
-    action = data.get("action", "BUY")
-    amount = data.get("amount", 1)
+symbol = data.get("symbol", "frxEURUSD")
+amount = data.get("amount", 1)
 
-    contract_type = "CALL" if action.upper() == "BUY" else "PUT"
+market_data = data.get("market_data", {})
 
-    deriv_token = os.environ.get("DERIV_API_TOKEN")
+engine = DecisionEngine()
+
+analysis = engine.analyze_market(
+    symbol,
+    market_data
+)
+
+signal = analysis.get("signal", "HOLD")
+confidence = analysis.get("confidence", 0)
+reason = analysis.get("reason", "No reason")
+
+if signal == "HOLD":
+
+    return jsonify({
+        "status": "hold",
+        "confidence": confidence,
+        "reason": reason
+    })
+
+contract_type = "CALL" if signal == "BUY" else "PUT"
 
     client = DerivClient(deriv_token)
 
