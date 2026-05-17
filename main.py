@@ -98,4 +98,72 @@ def trade():
 
         return jsonify({
             "error": "Bot is offline"
-        }),
+        }), 400
+
+    data = request.get_json()
+
+    symbol = data.get("symbol", "frxEURUSD")
+    amount = data.get("amount", 1)
+
+    market_data = data.get("market_data", {})
+
+    engine = DecisionEngine()
+
+    analysis = engine.analyze_market(
+        symbol,
+        market_data
+    )
+
+    signal = analysis.get("signal", "HOLD")
+    confidence = analysis.get("confidence", 0)
+    reason = analysis.get("reason", "No reason")
+
+    if signal == "HOLD":
+
+        return jsonify({
+            "status": "hold",
+            "confidence": confidence,
+            "reason": reason
+        })
+
+    contract_type = "CALL" if signal == "BUY" else "PUT"
+
+    deriv_token = os.environ.get("DERIV_API_TOKEN")
+
+    client = DerivClient(deriv_token)
+
+    connection = client.connect()
+
+    if connection is not True:
+
+        return jsonify({
+            "error": connection
+        }), 500
+
+    response = client.buy(
+        symbol,
+        amount,
+        contract_type
+    )
+
+    client.close()
+
+    return jsonify({
+        "status": "executed",
+        "signal": signal,
+        "confidence": confidence,
+        "reason": reason,
+        "symbol": symbol,
+        "amount": amount,
+        "deriv_response": response
+    })
+
+
+if __name__ == "__main__":
+
+    port = int(os.environ.get("PORT", 10000))
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+        )
