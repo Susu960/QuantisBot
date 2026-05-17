@@ -38,7 +38,9 @@ class DerivClient:
 
                 logger.error(response["error"])
 
-                return False
+                return {
+                    "deriv_error": response["error"]
+                }
 
             return True
 
@@ -46,7 +48,9 @@ class DerivClient:
 
             logger.error(f"Connection error: {str(e)}")
 
-            return False
+            return {
+                "connection_error": str(e)
+            }
 
     def buy(self, symbol, amount, contract_type):
 
