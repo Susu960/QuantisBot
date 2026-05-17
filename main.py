@@ -27,6 +27,7 @@ def health_check():
 
 @app.route("/status", methods=["GET"])
 def get_status():
+
     return jsonify({
         "bot": "online" if bot_state["online"] else "offline",
         "ai": bot_state["ai"],
@@ -42,22 +43,35 @@ def start_bot():
     key = os.environ.get("OPENAI_API_KEY")
 
     if not token:
-        return jsonify({"error": "DERIV_API_TOKEN not set"}), 500
+        return jsonify({
+            "error": "DERIV_API_TOKEN not set"
+        }), 500
 
     if not key:
-        return jsonify({"error": "OPENAI_API_KEY not set"}), 500
+        return jsonify({
+            "error": "OPENAI_API_KEY not set"
+        }), 500
 
     client = DerivClient(token)
 
-    if not client.connect():
-        return jsonify({"error": "Failed to connect to Deriv"}), 500
+    connection = client.connect()
+
+    if connection is not True:
+
+        return jsonify({
+            "error": connection
+        }), 500
 
     client.close()
 
     try:
         DecisionEngine(key)
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
     bot_state["online"] = True
 
@@ -81,65 +95,7 @@ def stop_bot():
 def trade():
 
     if not bot_state["online"]:
-        return jsonify({"error": "Bot is offline"}), 400
-
-    data = request.get_json()
-
-    symbol = data.get("symbol", "frxEURUSD")
-    amount = data.get("amount", 1)
-
-    market_data = data.get("market_data", {})
-
-    engine = DecisionEngine()
-
-    analysis = engine.analyze_market(
-        symbol,
-        market_data
-    )
-
-    signal = analysis.get("signal", "HOLD")
-    confidence = analysis.get("confidence", 0)
-    reason = analysis.get("reason", "No reason")
-
-    if signal == "HOLD":
 
         return jsonify({
-            "status": "hold",
-            "confidence": confidence,
-            "reason": reason
-        })
-
-    contract_type = "CALL" if signal == "BUY" else "PUT"
-
-    deriv_token = os.environ.get("DERIV_API_TOKEN")
-
-    client = DerivClient(deriv_token)
-
-    if client.connect():
-
-        response = client.buy(
-            symbol,
-            amount,
-            contract_type
-        )
-
-        client.close()
-
-        return jsonify({
-            "status": "executed",
-            "signal": signal,
-            "confidence": confidence,
-            "reason": reason,
-            "symbol": symbol,
-            "amount": amount,
-            "deriv_response": response
-        })
-
-    return jsonify({
-        "status": "error"
-    }), 500
-
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+            "error": "Bot is offline"
+        }),
