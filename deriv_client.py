@@ -13,34 +13,24 @@ class DerivClient:
         self.token = token
         self.ws = None
 
-        self.url = "wss://ws.derivws.com/websockets/v3?app_id=1089"
+        self.url = "wss://ws.derivws.com/websockets/v3"
 
     def connect(self):
 
         try:
 
+            headers = [
+                "Authorization: Bearer " + self.token,
+                "Deriv-App-ID: 1089"
+            ]
+
             self.ws = websocket.create_connection(
                 self.url,
+                header=headers,
                 sslopt={"cert_reqs": ssl.CERT_NONE}
             )
 
-            auth_request = {
-                "authorize": self.token
-            }
-
-            self.ws.send(json.dumps(auth_request))
-
-            response = json.loads(self.ws.recv())
-
-            logger.info(f"Deriv auth response: {response}")
-
-            if "error" in response:
-
-                logger.error(response["error"])
-
-                return {
-                    "deriv_error": response["error"]
-                }
+            logger.info("Connected to websocket")
 
             return True
 
