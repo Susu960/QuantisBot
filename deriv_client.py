@@ -13,7 +13,7 @@ class DerivClient:
         self.token = token
         self.ws = None
 
-        self.url = "wss://ws.derivws.com/websockets/v3"
+        self.url = "wss://ws.derivws.com/websockets/v3?app_id=33jnrgaYNKn4PLnXF7Z2k"
 
     def connect(self):
 
