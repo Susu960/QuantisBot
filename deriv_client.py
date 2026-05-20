@@ -21,7 +21,7 @@ class DerivClient:
 
             headers = [
                 "Authorization: Bearer " + self.token,
-                "Deriv-App-ID: 
+                "Deriv-App-ID: 33jlLVvXXSH9iPFRywUjM"
             ]
 
             self.ws = websocket.create_connection(
