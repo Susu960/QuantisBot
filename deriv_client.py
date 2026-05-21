@@ -2,6 +2,7 @@ import json
 import websocket
 import logging
 import ssl
+import requests
 
 logger = logging.getLogger("deriv-client")
 
@@ -13,20 +14,36 @@ class DerivClient:
         self.token = token
         self.ws = None
 
-        self.url = None
+        self.app_id = "33jlLVvXXSH9iPFRywUjM"
+
+        self.account_id = "SUA_CONTA_DERIV"
 
     def connect(self):
 
         try:
 
-            headers = [
-                "Authorization: Bearer " + self.token,
-                "Deriv-App-ID: 33jlLVvXXSH9iPFRywUjM"
-            ]
+            response = requests.post(
+                f"https://api.derivws.com/trading/v1/options/accounts/{self.account_id}/otp",
+                headers={
+                    "Authorization": f"Bearer {self.token}",
+                    "Deriv-App-ID": self.app_id
+                }
+            )
+
+            data = response.json()
+
+            logger.info(f"OTP response: {data}")
+
+            if "errors" in data:
+
+                return {
+                    "otp_error": data["errors"]
+                }
+
+            ws_url = data["data"]["url"]
 
             self.ws = websocket.create_connection(
-                self.url,
-                header=headers,
+                ws_url,
                 sslopt={"cert_reqs": ssl.CERT_NONE}
             )
 
