@@ -16,7 +16,7 @@ class DerivClient:
 
         self.app_id = "33jlLVvXXSH9iPFRywUjM"
 
-        self.account_id = "019df37c-b182-7e4c-813c-34ecb756f835"
+        self.account_id = "101743110"
 
     def connect(self):
 
