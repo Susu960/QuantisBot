@@ -1,169 +1,200 @@
 from flask import Flask, jsonify, request
 import os
 import logging
-from deriv_client import DerivClient
-from decision_engine import DecisionEngine
+
 from dotenv import load_dotenv
+
+from decision_engine import DecisionEngine
+from market_data import MarketData
 
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("trading-backend")
+logger = logging.getLogger("quantis-analyst")
 
 app = Flask(__name__)
 
-bot_state = {
-    "online": False,
-    "ai": "connected",
-    "broker": "connected",
-    "mode": "monitoring"
-}
+market = MarketData()
+engine = DecisionEngine()
 
 
 @app.route("/", methods=["GET"])
 def health_check():
-    return jsonify({"status": "running"})
+
+    return jsonify({
+        "status": "running",
+        "service": "Quantis Analyst"
+    })
 
 
 @app.route("/status", methods=["GET"])
-def get_status():
+def status():
 
     return jsonify({
-        "bot": "online" if bot_state["online"] else "offline",
-        "ai": bot_state["ai"],
-        "broker": bot_state["broker"],
-        "mode": bot_state["mode"]
+        "bot": "online",
+        "ai": "connected",
+        "market_data": "connected"
     })
 
 
-@app.route("/start", methods=["GET", "POST"])
-def start_bot():
-
-    token = os.environ.get("DERIV_API_TOKEN")
-    key = os.environ.get("OPENAI_API_KEY")
-
-    if not token:
-        return jsonify({
-            "error": "DERIV_API_TOKEN not set"
-        }), 500
-
-    if not key:
-        return jsonify({
-            "error": "OPENAI_API_KEY not set"
-        }), 500
-
-    client = DerivClient(token)
-
-    connection = client.connect()
-
-    if connection is not True:
-
-        return jsonify({
-            "error": connection
-        }), 500
-
-    client.close()
+@app.route("/analyze", methods=["POST"])
+def analyze():
 
     try:
-        DecisionEngine(key)
+
+        data = request.get_json() or {}
+
+        command = data.get(
+            "command",
+            ""
+        ).strip()
+
+        if not command:
+
+            return jsonify({
+                "success": False,
+                "error": "Command not provided"
+            }), 400
+
+        symbol = extract_symbol(command)
+
+        if not symbol:
+
+            return jsonify({
+                "success": False,
+                "error": "Unsupported asset"
+            }), 400
+
+        market_data = market.get_market_snapshot(
+            symbol
+        )
+
+        if not market_data.get("success"):
+
+            return jsonify({
+                "success": False,
+                "error": market_data.get("error")
+            }), 500
+
+        analysis = engine.analyze_market(
+            symbol,
+            market_data
+        )
+
+        return jsonify({
+            "success": True,
+            "asset": symbol,
+            "market_data": market_data,
+            "analysis": analysis
+        })
 
     except Exception as e:
 
+        logger.exception(e)
+
         return jsonify({
+            "success": False,
             "error": str(e)
         }), 500
 
-    bot_state["online"] = True
 
-    return jsonify({
-        "message": "Bot is ready to trade",
-        "status": "online"
-    })
+@app.route("/market", methods=["POST"])
+def market_overview():
 
+    try:
 
-@app.route("/stop", methods=["POST"])
-def stop_bot():
+        symbols = market.get_supported_symbols()
 
-    bot_state["online"] = False
+        results = []
 
-    return jsonify({
-        "message": "Bot stopped"
-    })
+        for symbol in symbols:
 
+            snapshot = market.get_market_snapshot(
+                symbol
+            )
 
-@app.route("/trade", methods=["POST"])
-def trade():
+            if not snapshot.get("success"):
+                continue
 
-    if not bot_state["online"]:
+            analysis = engine.analyze_market(
+                symbol,
+                snapshot
+            )
 
-        return jsonify({
-            "error": "Bot is offline"
-        }), 400
+            results.append({
+                "asset": symbol,
+                "analysis": analysis
+            })
 
-    data = request.get_json()
-
-    symbol = data.get("symbol", "frxEURUSD")
-    amount = data.get("amount", 1)
-
-    market_data = data.get("market_data", {})
-
-    engine = DecisionEngine()
-
-    analysis = engine.analyze_market(
-        symbol,
-        market_data
-    )
-
-    signal = analysis.get("signal", "HOLD")
-    confidence = analysis.get("confidence", 0)
-    reason = analysis.get("reason", "No reason")
-
-    if signal == "HOLD":
+        results.sort(
+            key=lambda x: x["analysis"].get(
+                "confidence",
+                0
+            ),
+            reverse=True
+        )
 
         return jsonify({
-            "status": "hold",
-            "confidence": confidence,
-            "reason": reason
+            "success": True,
+            "top_signals": results[:3]
         })
 
-    contract_type = "CALL" if signal == "BUY" else "PUT"
+    except Exception as e:
 
-    deriv_token = os.environ.get("DERIV_API_TOKEN")
-
-    client = DerivClient(deriv_token)
-
-    connection = client.connect()
-
-    if connection is not True:
+        logger.exception(e)
 
         return jsonify({
-            "error": connection
+            "success": False,
+            "error": str(e)
         }), 500
 
-    response = client.buy(
-        symbol,
-        amount,
-        contract_type
-    )
 
-    client.close()
+def extract_symbol(command):
 
-    return jsonify({
-        "status": "executed",
-        "signal": signal,
-        "confidence": confidence,
-        "reason": reason,
-        "symbol": symbol,
-        "amount": amount,
-        "deriv_response": response
-    })
+    text = command.upper()
+
+    aliases = {
+        "OURO": "XAU/USD",
+        "GOLD": "XAU/USD",
+        "BITCOIN": "BTC/USD",
+        "BTC": "BTC/USD",
+        "ETHEREUM": "ETH/USD",
+        "ETH": "ETH/USD",
+
+        "EUR/USD": "EUR/USD",
+        "GBP/USD": "GBP/USD",
+        "USD/JPY": "USD/JPY",
+        "USD/CHF": "USD/CHF",
+        "AUD/USD": "AUD/USD",
+        "USD/CAD": "USD/CAD",
+        "NZD/USD": "NZD/USD",
+        "EUR/GBP": "EUR/GBP",
+        "EUR/JPY": "EUR/JPY",
+        "GBP/JPY": "GBP/JPY",
+        "XAU/USD": "XAU/USD",
+        "BTC/USD": "BTC/USD",
+        "ETH/USD": "ETH/USD"
+    }
+
+    for key, value in aliases.items():
+
+        if key in text:
+
+            return value
+
+    return None
 
 
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT", 10000))
+    port = int(
+        os.environ.get(
+            "PORT",
+            10000
+        )
+    )
 
     app.run(
         host="0.0.0.0",
         port=port
-        )
+    )
