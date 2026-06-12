@@ -14,32 +14,115 @@ class MarketData:
             "https://api.twelvedata.com"
         )
 
-    def get_price(self, symbol):
+        self.supported_symbols = {
+            "EUR/USD": "EUR/USD",
+            "GBP/USD": "GBP/USD",
+            "USD/JPY": "USD/JPY",
+            "USD/CHF": "USD/CHF",
+            "AUD/USD": "AUD/USD",
+            "USD/CAD": "USD/CAD",
+            "NZD/USD": "NZD/USD",
+            "EUR/GBP": "EUR/GBP",
+            "EUR/JPY": "EUR/JPY",
+            "GBP/JPY": "GBP/JPY",
+            "XAU/USD": "XAU/USD",
+            "BTC/USD": "BTC/USD",
+            "ETH/USD": "ETH/USD",
+            "OURO": "XAU/USD",
+            "GOLD": "XAU/USD",
+            "BITCOIN": "BTC/USD",
+            "BTC": "BTC/USD",
+            "ETHEREUM": "ETH/USD",
+            "ETH": "ETH/USD"
+        }
+
+    def normalize_symbol(self, symbol):
+
+        symbol = symbol.upper().strip()
+
+        return self.supported_symbols.get(
+            symbol,
+            symbol
+        )
+
+    def get_supported_symbols(self):
+
+        return [
+            "EUR/USD",
+            "GBP/USD",
+            "USD/JPY",
+            "USD/CHF",
+            "AUD/USD",
+            "USD/CAD",
+            "NZD/USD",
+            "EUR/GBP",
+            "EUR/JPY",
+            "GBP/JPY",
+            "XAU/USD",
+            "BTC/USD",
+            "ETH/USD"
+        ]
+
+    def get_market_snapshot(self, symbol):
 
         try:
 
+            symbol = self.normalize_symbol(
+                symbol
+            )
+
             response = requests.get(
-                f"{self.base_url}/price",
+                f"{self.base_url}/time_series",
                 params={
                     "symbol": symbol,
+                    "interval": "1h",
+                    "outputsize": 24,
                     "apikey": self.api_key
                 },
-                timeout=10
+                timeout=15
             )
 
             data = response.json()
 
-            if "price" not in data:
+            if "values" not in data:
 
                 return {
                     "success": False,
                     "error": data
                 }
 
+            candles = data["values"]
+
+            closes = []
+
+            for candle in reversed(candles):
+
+                closes.append(
+                    float(candle["close"])
+                )
+
+            current_price = closes[-1]
+
+            first_price = closes[0]
+
+            change_percent = round(
+                (
+                    (
+                        current_price -
+                        first_price
+                    )
+                    /
+                    first_price
+                ) * 100,
+                2
+            )
+
             return {
                 "success": True,
                 "symbol": symbol,
-                "price": float(data["price"])
+                "current_price": current_price,
+                "change_percent": change_percent,
+                "prices": closes
             }
 
         except Exception as e:
@@ -47,16 +130,4 @@ class MarketData:
             return {
                 "success": False,
                 "error": str(e)
-            }
-
-    def get_multiple_prices(self, symbols):
-
-        results = []
-
-        for symbol in symbols:
-
-            results.append(
-                self.get_price(symbol)
-            )
-
-        return results
+        }
