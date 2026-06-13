@@ -15,6 +15,101 @@ class DecisionEngine:
             api_key=key
         )
 
+    def simplified_analysis(
+        self,
+        symbol,
+        market_data
+    ):
+
+        prices = market_data.get(
+            "prices",
+            []
+        )
+
+        if len(prices) < 2:
+
+            return {
+                "mode": "SIMPLIFIED",
+                "signal": "HOLD",
+                "confidence": 50,
+                "risk": "MEDIUM",
+                "outlook_30m": "NEUTRAL",
+                "outlook_2h": "NEUTRAL",
+                "outlook_5h": "NEUTRAL",
+                "outlook_24h": "NEUTRAL",
+                "summary": (
+                    "Insufficient market data."
+                )
+            }
+
+        first_price = prices[0]
+        last_price = prices[-1]
+
+        variation = (
+            (last_price - first_price)
+            / first_price
+        ) * 100
+
+        if variation > 0.30:
+
+            signal = "BUY"
+            confidence = min(
+                int(abs(variation) * 100),
+                75
+            )
+
+        elif variation < -0.30:
+
+            signal = "SELL"
+            confidence = min(
+                int(abs(variation) * 100),
+                75
+            )
+
+        else:
+
+            signal = "HOLD"
+            confidence = 55
+
+        return {
+            "mode": "SIMPLIFIED",
+            "signal": signal,
+            "confidence": confidence,
+            "risk": "MEDIUM",
+            "outlook_30m": (
+                "BULLISH"
+                if signal == "BUY"
+                else "BEARISH"
+                if signal == "SELL"
+                else "NEUTRAL"
+            ),
+            "outlook_2h": (
+                "BULLISH"
+                if signal == "BUY"
+                else "BEARISH"
+                if signal == "SELL"
+                else "NEUTRAL"
+            ),
+            "outlook_5h": (
+                "BULLISH"
+                if signal == "BUY"
+                else "BEARISH"
+                if signal == "SELL"
+                else "NEUTRAL"
+            ),
+            "outlook_24h": (
+                "BULLISH"
+                if signal == "BUY"
+                else "BEARISH"
+                if signal == "SELL"
+                else "NEUTRAL"
+            ),
+            "summary": (
+                "Simplified analysis generated "
+                "without advanced AI."
+            )
+        }
+
     def analyze_market(
         self,
         symbol,
@@ -38,13 +133,11 @@ Rules:
 - Avoid forcing trades.
 - If confidence is low, return HOLD.
 - Only return valid JSON.
-- Confidence must be between 0 and 100.
-- Risk must be LOW, MEDIUM or HIGH.
-- Signal must be BUY, SELL or HOLD.
 
 Response format:
 
 {{
+    "mode": "ADVANCED",
     "signal": "BUY",
     "confidence": 82,
     "risk": "LOW",
@@ -52,50 +145,60 @@ Response format:
     "outlook_2h": "BULLISH",
     "outlook_5h": "NEUTRAL",
     "outlook_24h": "BULLISH",
-    "summary": "Short explanation for the user."
+    "summary": "Short explanation."
 }}
 """
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a professional market analyst."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.2
-        )
-
-        content = (
-            response
-            .choices[0]
-            .message
-            .content
-            .strip()
-        )
-
         try:
 
-            return json.loads(content)
-
-        except Exception:
-
-            return {
-                "signal": "HOLD",
-                "confidence": 0,
-                "risk": "HIGH",
-                "outlook_30m": "NEUTRAL",
-                "outlook_2h": "NEUTRAL",
-                "outlook_5h": "NEUTRAL",
-                "outlook_24h": "NEUTRAL",
-                "summary": (
-                    "Unable to generate analysis."
+            response = (
+                self.client
+                .chat
+                .completions
+                .create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are a professional "
+                                "market analyst."
+                            )
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    temperature=0.2
                 )
-            }
+            )
+
+            content = (
+                response
+                .choices[0]
+                .message
+                .content
+                .strip()
+            )
+
+            analysis = json.loads(
+                content
+            )
+
+            analysis["mode"] = (
+                "ADVANCED"
+            )
+
+            return analysis
+
+        except Exception as e:
+
+            print(
+                f"OpenAI unavailable: {e}"
+            )
+
+            return self.simplified_analysis(
+                symbol,
+                market_data
+        )
