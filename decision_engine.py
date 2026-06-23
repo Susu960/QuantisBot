@@ -4,7 +4,7 @@ from openai import OpenAI
 
 class DecisionEngine:
     
-    def __init__(self, api_key=None):
+def __init__(self, api_key=None):
 
     key = api_key or os.environ.get(
         "OPENAI_API_KEY"
